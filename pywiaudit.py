@@ -15,12 +15,12 @@ init(autoreset=True)
 VERSION = "2.1"
 AUTHOR = "Michael Nkomo"
 BANNER = f"""
-{Fore.RED}  _  __{Fore.GREEN} ______{Fore.YELLOW}  _____{Fore.BLUE}     ____{Fore.MAGENTA}  
-{Fore.RED} | |/ /{Fore.GREEN}|  ____|{Fore.YELLOW}|  __ \\{Fore.BLUE}   / __ \\{Fore.MAGENTA} 
-{Fore.RED} | ' / {Fore.GREEN}| |__   {Fore.YELLOW}| |  | |{Fore.BLUE} | |  | |{Fore.MAGENTA}
-{Fore.RED} |  <  {Fore.GREEN}|  __|  {Fore.YELLOW}| |  | |{Fore.BLUE} | |  | |{Fore.MAGENTA}
-{Fore.RED} | . \\ {Fore.GREEN}| |____ {Fore.YELLOW}| |__| |{Fore.BLUE}| |__| |{Fore.MAGENTA}
-{Fore.RED} |_|\\_\\{Fore.GREEN}|______|{Fore.YELLOW}|_____/{Fore.BLUE}  \\____/{Fore.MAGENTA} 
+{Fore.RED}  _  __{Fore.GREEN} ______{Fore.YELLOW}  _____{Fore.BLUE}     ____{Fore.MAGENTA}  _______{Fore.GREEN}
+{Fore.RED} | |/ /{Fore.GREEN}|  ____|{Fore.YELLOW}|  __ \\{Fore.BLUE} / /__\ \{Fore.MAGENTA}|   __   |{Fore.GREEN}
+{Fore.RED} | ' / {Fore.GREEN}| |__   {Fore.YELLOW}| |  | |{Fore.BLUE} | |  | |{Fore.MAGENTA}|  |   \ /{Fore.GREEN}
+{Fore.RED} |  <  {Fore.GREEN}|  __|  {Fore.YELLOW}| |  | |{Fore.BLUE} | |__| |{Fore.MAGENTA}|  |___/ \{Fore.GREEN}
+{Fore.RED} | . \\ {Fore.GREEN}| |____ {Fore.YELLOW}| |__| |{Fore.BLUE}| |__| |{Fore.MAGENTA}|  |___   |{Fore.GREEN}
+{Fore.RED} |_|\\_\\{Fore.GREEN}|______|{Fore.YELLOW}|_____/{Fore.BLUE}| |  | |{Fore.MAGENTA}|__|   |__|{Fore.GREEN}
 """
 REQUIRED_TOOLS = ['aircrack-ng', 'iwconfig', 'tshark', 'hcxdumptool', 'wash', 'reaver', 'aireplay-ng']
 SESSION_FILE = "pywiaudit.session"
