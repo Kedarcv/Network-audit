@@ -1,3 +1,6 @@
+
+![Network-audit](https://github.com/user-attachments/assets/be783ad7-f6a6-4246-ab9f-da18442509fd)
+
 # Network-audit
 One of my Cybersecurity projects for Network Auditing..
 This project is for educational use only and not to be misused to exploit the public.
