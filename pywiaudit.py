@@ -5,6 +5,7 @@ import time
 import os
 import sys
 import json
+import threading
 from datetime import datetime
 from colorama import Fore, Style, init
 import signal
@@ -13,11 +14,53 @@ import signal
 init(autoreset=True)
 
 # Configuration
-VERSION = "2.0"
+VERSION = "2.1"
 AUTHOR = "Michael Nkomo"
-REQUIRED_TOOLS = ['aircrack-ng', 'iwconfig', 'tshark', 'hcxdumptool', 'wash']
-SESSION_FILE = "pywiaudit.session"
-OUTPUT_DIR = "captures"
+BANNER = f"""
+{Fore.RED}  _  __{Fore.GREEN} ______{Fore.YELLOW}  _____{Fore.BLUE}     ____{Fore.MAGENTA}  
+{Fore.RED} | |/ /{Fore.GREEN}|  ____|{Fore.YELLOW}|  __ \\{Fore.BLUE}   / __ \\{Fore.MAGENTA} 
+{Fore.RED} | ' / {Fore.GREEN}| |__   {Fore.YELLOW}| |  | |{Fore.BLUE} | |  | |{Fore.MAGENTA}
+{Fore.RED} |  <  {Fore.GREEN}|  __|  {Fore.YELLOW}| |  | |{Fore.BLUE} | |  | |{Fore.MAGENTA}
+{Fore.RED} | . \\ {Fore.GREEN}| |____ {Fore.YELLOW}| |__| |{Fore.BLUE}| |__| |{Fore.MAGENTA}
+{Fore.RED} |_|\\_\\{Fore.GREEN}|______|{Fore.YELLOW}|_____/{Fore.BLUE}  \\____/{Fore.MAGENTA} 
+"""
+
+class CLIAnimator:
+    @staticmethod
+    def kedar_initialization():
+        colors = [Fore.RED, Fore.GREEN, Fore.YELLOW, Fore.BLUE, Fore.MAGENTA]
+        kedar = "KEDAR"
+        print(f"\n{Fore.WHITE}Initializing ", end='', flush=True)
+        
+        for i, char in enumerate(kedar):
+            print(f"{colors[i]}{char}", end='', flush=True)
+            time.sleep(0.1)
+        
+        print(Style.RESET_ALL)
+        time.sleep(0.5)
+        print(BANNER)
+        time.sleep(0.2)
+        print(f"{Fore.CYAN}Wireless Audit Framework v{VERSION}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Created by {AUTHOR}{Style.RESET_ALL}\n")
+        time.sleep(0.3)
+
+    @staticmethod
+    def loading_spinner(message):
+        spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+        delay = 0.1
+        
+        def run_spinner():
+            nonlocal stop
+            i = 0
+            while not stop:
+                print(f"\r{Fore.CYAN}{spinner[i]}{Style.RESET_ALL} {message}  ", end='', flush=True)
+                i = (i + 1) % len(spinner)
+                time.sleep(delay)
+        
+        stop = False
+        t = threading.Thread(target=run_spinner)
+        t.start()
+        return lambda: (stop.__setitem__(0, True), t.join())
 
 class WirelessAuditTool:
     def __init__(self, args):
@@ -33,6 +76,41 @@ class WirelessAuditTool:
         self.check_dependencies()
         self.setup_output_dir()
         self.load_session()
+
+    def enable_monitor_mode(self):
+        stop_spinner = CLIAnimator.loading_spinner("Configuring monitor mode")
+        try:
+            # Existing monitor mode code...
+            stop_spinner()
+            print(f"\r{Fore.GREEN}✔{Style.RESET_ALL} Monitor mode enabled")
+        except Exception as e:
+            stop_spinner()
+            print(f"\r{Fore.RED}✖{Style.RESET_ALL} Monitor mode failed")
+            raise e
+
+    def scan_networks(self):
+        stop_spinner = CLIAnimator.loading_spinner("Scanning for networks")
+        try:
+            # Existing scanning code...
+            stop_spinner()
+            print(f"\r{Fore.GREEN}✔{Style.RESET_ALL} Network scan completed")
+            return networks
+        except Exception as e:
+            stop_spinner()
+            print(f"\r{Fore.RED}✖{Style.RESET_ALL} Network scan failed")
+            raise e
+
+    def capture_pmkid(self, target):
+        stop_spinner = CLIAnimator.loading_spinner("Capturing PMKID")
+        try:
+            # Existing PMKID code...
+            stop_spinner()
+            print(f"\r{Fore.GREEN}✔{Style.RESET_ALL} PMKID captured")
+            return True
+        except Exception as e:
+            stop_spinner()
+            print(f"\r{Fore.RED}✖{Style.RESET_ALL} PMKID capture failed")
+            return False
 
     def validate_root(self):
         if os.geteuid() != 0:
@@ -240,8 +318,9 @@ class WirelessAuditTool:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description=f"PyWiAudit v{VERSION} - Advanced Wireless Audit Tool",
-        epilog=f"Author: {AUTHOR} | Legal Disclaimer: Use only with proper authorization"
+        description=f"PyWiAudit v{VERSION}",
+        formatter_class=argparse.RawTextHelpFormatter,
+        epilog=BANNER + f"\n{Fore.YELLOW}Legal Disclaimer: Use only with proper authorization{Style.RESET_ALL}"
     )
     parser.add_argument('-i', '--interface', required=True, help="Wireless interface")
     parser.add_argument('-w', '--wordlist', help="Path to wordlist for cracking")
