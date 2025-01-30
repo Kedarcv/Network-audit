@@ -15,4 +15,6 @@ RUN :
 bash # :
 
 sudo python3 pywiaudit.py -i wlan0
-sudo python3 pywiaudit.py -i wlan0 -w /path/to/wordlist.txt (replace /path/to/wordlist.text with real path)
+
+
+sudo python3 pywiaudit.py -i wlan0 -w wordlist.txt (replace /path/to/wordlist.text with real path)
